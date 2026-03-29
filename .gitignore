@@ -8,3 +8,4 @@ __pycache__/
 .vscode/
 nano .gitignore
 src/sllidar_ros2/
+src/rplidar_ros/
