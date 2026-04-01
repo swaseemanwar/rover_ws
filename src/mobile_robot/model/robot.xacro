@@ -1,0 +1,217 @@
+<?xml version="1.0" ?>
+<robot name="robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<!-- Geometry and Constants-->
+<!-- constants-->
+<xacro:property name="pi_const" value="3.14159265"/>
+
+<!-- Body Dimensions-->
+<xacro:property name="a" value="0.55663" />
+<xacro:property name="b" value="0.14044" />
+<xacro:property name="c" value="0.388 " />
+
+<!--wheel and body dimensions-->
+<xacro:property name="r" value="0.035 " />
+<xacro:property name="d" value="0.04 " />
+
+<xacro:property name="s1" value="${b-2+r}"/>
+<xacro:property name="s2" value="${2*r}"/>
+<xacro:property name="s3" value="${2*r}"/>
+<xacro:property name="s4" value="${c/2+d/2}"/>
+
+<!--Material Density-->
+<!-- Body material density-->
+<xacro:property name="d1" value="2710.0"/>
+<!-- wheel material density-->
+ <xacro:property name="d2" value="2710.0"/>
+
+
+ <!-- Robot body mass, wheel mass -->
+<!-- body -->
+<xacro:property name="m1" value="${d1*a*b*c}"/>
+<!-- wheel -->
+<xacro:property name="m2" value="${d2*pi_const*r*r*r}"/>
+
+
+<!-- Moments of inertia of the robot body -->
+<xacro:property name="Ix_body" value="${(1/12)*m1*(b*b+c*c) }" />
+<xacro:property name="Iy_body" value="${(1/12)*m1*(a*a+b*b) }" />
+<xacro:property name="Iz_body" value="${(1/12)*m1*(a*a+c*c) }" />
+
+<!-- Moments of inertia of the wheel -->
+<xacro:property name="Iz_wheel" value="${0.5*m2*r*r}" />
+<xacro:property name="I_wheel" value="${(1.0/12.0) *m2*(3.0*r*r+d*d)}"/>
+
+
+<!-- This macro defines the complete inertial section of the robot body -->
+<!-- It is used later in the code -->
+<xacro:macro name="inertia_body">
+    <inertial>
+<!-- Displacement and orientation of the center of the mass frame of the link with respect to t -->
+<origin rpy="0 0 0" xyz="0 0 ${s1}"/>
+<mass value="${m}"/>
+<inertia ixx="${Ix_body}" ixy="0.0" ixz="0.0" iyy="${Iy_body}" iyz="0" izz="${Iz_body}" />
+</inertial>
+</xacro:macro>
+
+<!-- inis macro derines the complete inertial section of the wheel-->
+<!-- It is used later in the code -->
+<xacro: macro name="inertia_wheel">
+<inertial>
+<origin rpy="1.570795 0 0" xyz="0 0 0"/>
+<mass value="${m2}"/>
+<inertia ixx="${I_wheel}" ixy="0.0" ixz="0.0" iyy="${I_wheel}" iyz="0" izz="${Iz_wheel}" />
+</inertial>
+</xacro:macro>
+ 
+
+<!--Include additiponall files-->
+
+<xacro:include filename="$(find mobile_robot)/model/robot.gazebo" />
+
+<!--Fictious link -->
+<link name="base_footprint"> </link>
+<joint name="body_link_joint" type="fixed">
+<parent link="base_footprint"/>
+<child link="body_link"/>
+</joint>
+
+
+
+<!--Body link of the robot-->
+<link name="body_link">
+    <visual>
+        <geometry>
+            <box size="${a} ${c} ${b}" />
+        </geometry>
+<!-- Displacement and orientation of the geometric center of the link with respec to the link f, distance bn c1 and c2 or s1-->
+    <origin rpy="0 0 0" xyz="0 0 ${s1}"/>
+    </visual>
+
+
+    <collision>
+        <geometry>
+           <box size="${a} ${c} ${b}" />
+        </geometry>
+        <origin rpy="0 0 0" xyz="0 0 ${s1}"/>
+    </collision>
+
+    <xacro: inertia_body /> <!--macro-->
+</link>
+
+
+<joint name="wheel1_joint" type="continuous" >
+    <parent link="body_link"/>
+    <child link="wheel1_link" />
+    <origin xyz="${-s2} ${-s4} ${r}" rpy="0 0 0" /><!--wheel is oriented along the frame link c1-->
+    <axis xyz="0 1 0"/><!--we want the wheel to rotate along the y axis-->
+    <limit effort="50000" velocity="10"/><!--torque,velocity-->
+    <dynamics damping="1.0" friction="1.0"/>
+</joint>
+
+<link name="wheel1_link">
+    <visual>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/><!--c4 rotated along x axis for pi/2 angles-->
+        <geometry>
+             <cylinder length="${d}" radius="${r}"/>
+        </geometry>
+    </visual>
+
+    <collision>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${d}" radius="${r}"/>
+        </geometry>
+    </collision>
+
+
+    <xacro: inertia_wheel />
+</link>
+
+
+<joint name="wheel2_joint" type="continuous" >
+    <parent link="body_link"/>
+    <child link="wheel2_link" />
+    <origin xyz="${-s2} ${s4} ${r}" rpy="0 0 0" /><!--wheel is oriented along the frame link c1-->
+    <axis xyz="0 1 0"/><!--we want the wheel to rotate along the y axis, wrt to c1 since we gave c1 as the origin-->
+    <limit effort="50000" velocity="10"/><!--torque,velocity-->
+    <dynamics damping="1.0" friction="1.0"/><!--slows rotation-->
+</joint>
+
+<link name="wheel2_link"><!--the actual object-->
+    <visual>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/><!--c4 rotated along x axis for pi/2 angles-->
+        <geometry>
+             <cylinder length="${d}" radius="${r}"/>
+        </geometry>
+    </visual>
+
+    <collision>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${d}" radius="${r}"/>
+        </geometry>
+    </collision>
+
+
+    <xacro: inertia_wheel />
+</link>
+
+<joint name="wheel3_joint" type="continuous" >
+    <parent link="body_link"/>
+    <child link="wheel3_link" />
+    <origin xyz="${s2} ${-s4} ${r}" rpy="0 0 0" /><!--wheel is oriented along the frame link c1-->
+    <axis xyz="0 1 0"/><!--we want the wheel to rotate along the y axis, wrt to c1 since we gave c1 as the origin-->
+    <limit effort="50000" velocity="10"/><!--torque,velocity-->
+    <dynamics damping="1.0" friction="1.0"/><!--slows rotation-->
+</joint>
+
+<link name="wheel3_link"><!--the actual object-->
+    <visual>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/><!--c4 rotated along x axis for pi/2 angles-->
+        <geometry>
+             <cylinder length="${d}" radius="${r}"/>
+        </geometry>
+    </visual>
+
+    <collision>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${d}" radius="${r}"/>
+        </geometry>
+    </collision>
+
+
+    <xacro: inertia_wheel />
+</link>
+
+
+<joint name="wheel4_joint" type="continuous" >
+    <parent link="body_link"/>
+    <child link="wheel4_link" />
+    <origin xyz="${s2} ${s4} ${r}" rpy="0 0 0" /><!--wheel is oriented along the frame link c1-->
+    <axis xyz="0 1 0"/><!--we want the wheel to rotate along the y axis, wrt to c1 since we gave c1 as the origin-->
+    <limit effort="50000" velocity="10"/><!--torque,velocity-->
+    <dynamics damping="1.0" friction="1.0"/><!--slows rotation-->
+</joint>
+
+<link name="wheel4_link"><!--the actual object-->
+    <visual>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/><!--c4 rotated along x axis for pi/2 angles-->
+        <geometry>
+             <cylinder length="${d}" radius="${r}"/>
+        </geometry>
+    </visual>
+
+    <collision>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${d}" radius="${r}"/>
+        </geometry>
+    </collision>
+
+
+    <xacro: inertia_wheel />
+</link>
+
+
+</robot>
